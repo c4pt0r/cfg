@@ -2,7 +2,6 @@ package cfg
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -11,9 +10,17 @@ import (
 )
 
 var (
-	ErrNotExists      = errors.New("no such field")
-	ErrInvalidCfgFile = errors.New("invalid config file")
+	fmtErrNotExists      = "no such field: %s"
+	fmtErrInvalidCfgFile = "invalid config file: %s"
 )
+
+func ErrNotExists(fieldName string) error {
+	return fmt.Errorf(fmtErrNotExists, fieldName)
+}
+
+func ErrInvalidCfgFile(cfgFile string) error {
+	return fmt.Errorf(fmtErrInvalidCfgFile, cfgFile)
+}
 
 type Cfg struct {
 	l     sync.RWMutex
@@ -43,7 +50,7 @@ func (c *Cfg) Load() error {
 		if !strings.HasPrefix(trimed, "#") && len(trimed) > 0 {
 			parts := strings.SplitN(trimed, "=", 2)
 			if len(parts) != 2 {
-				return ErrInvalidCfgFile
+				return ErrInvalidCfgFile(c.fname)
 			}
 			c.m[strings.Trim(parts[0], " ")] = strings.Trim(parts[1], " ")
 		}
@@ -71,7 +78,7 @@ func (c *Cfg) ReadString(k string, def string) (string, error) {
 	if v, b := c.m[k]; b {
 		return v, nil
 	}
-	return def, ErrNotExists
+	return def, ErrNotExists(k)
 }
 
 func (c *Cfg) ReadInt(k string, def int) (int, error) {
@@ -80,7 +87,7 @@ func (c *Cfg) ReadInt(k string, def int) (int, error) {
 	if v, b := c.m[k]; b {
 		return strconv.Atoi(v)
 	}
-	return def, ErrNotExists
+	return def, ErrNotExists(k)
 }
 
 func (c *Cfg) WriteString(k string, val string) {
